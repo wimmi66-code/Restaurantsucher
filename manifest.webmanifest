@@ -1,0 +1,17 @@
+{
+  "name": "Restaurantsucher Hamm",
+  "short_name": "Restaurants",
+  "description": "Geöffnete Restaurants in Hamm und Umgebung nach Küche, Preis und Reservierung finden.",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F6F2F0",
+  "theme_color": "#7A1F3D",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

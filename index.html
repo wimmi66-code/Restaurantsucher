@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Restaurantsucher Hamm</title>
+<meta name="description" content="Welche Restaurants in Hamm und Umgebung haben gerade geöffnet? Nach Küche, Preis und Reservierung suchen.">
+<meta name="theme-color" content="#7A1F3D">
+<meta name="color-scheme" content="light dark">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Restaurants">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500;62..125,700;62..125,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: Speisekarten-Logik – oben die Uhrzeit als Dreh- und Angelpunkt, links die Auswahl wie Gänge, rechts der fertige Auftrag */
+:root{
+  --bg:#F6F2F0; --paper:#FFFFFF; --ink:#2A1A20; --muted:#6E5A61; --line:#E2D7D9;
+  --accent:#7A1F3D; --accent-ink:#FFFFFF; --accent-soft:#F4E2E7;
+  --mark:#E3A72F; --mark-soft:#FBEBC8; --hl:#E3A72F; --ok:#1E7A4C; --warn:#A35B00;
+  --display:"Archivo",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:10px; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#171113; --paper:#21181B; --ink:#EFE6E8; --muted:#A8949A; --line:#3A2C31;
+  --accent:#E58AA6; --accent-ink:#2B0A15; --accent-soft:#3D1F29; --mark:#E3A72F; --mark-soft:#3D3016; --hl:#5E4413; --ok:#5FCB92; --warn:#F0A64A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#171113; --paper:#21181B; --ink:#EFE6E8; --muted:#A8949A; --line:#3A2C31;
+  --accent:#E58AA6; --accent-ink:#2B0A15; --accent-soft:#3D1F29; --mark:#E3A72F; --mark-soft:#3D3016; --hl:#5E4413; --ok:#5FCB92; --warn:#F0A64A; color-scheme:dark}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+[hidden]{display:none!important}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:20px;padding-block:28px 60px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-bottom:22px}
+h1{font-family:var(--display);font-stretch:78%;font-weight:800;font-size:clamp(30px,5.4vw,48px);line-height:1.02;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h1 .hl{background:linear-gradient(transparent 60%,var(--hl) 60%);padding:0 .06em}
+.lede{margin:8px 0 0;color:var(--muted);max-width:62ch}
+.clock{text-align:right;font-variant-numeric:tabular-nums}
+.clock .time{font-family:var(--display);font-stretch:80%;font-weight:800;font-size:34px;line-height:1}
+.clock .day{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.offline{font-family:var(--mono);font-size:12px;color:var(--warn)}
+.installbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 16px;padding:10px 14px;border:1.5px dashed var(--line);border-radius:10px;background:var(--paper);font-size:14px}
+.installbar .x{margin-left:auto;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1}
+nav.tabs{display:flex;gap:4px;border-bottom:2px solid var(--ink);overflow-x:auto;scrollbar-width:none}
+nav.tabs button{font-family:var(--display);font-stretch:85%;font-weight:700;font-size:15px;background:transparent;color:var(--muted);border:2px solid transparent;border-bottom:none;border-radius:8px 8px 0 0;padding:9px 16px;cursor:pointer;white-space:nowrap;margin-bottom:-2px}
+nav.tabs button[aria-selected="true"]{background:var(--paper);color:var(--ink);border-color:var(--ink);border-bottom:2px solid var(--paper)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.panel{background:var(--paper);border:2px solid var(--ink);border-top:none;border-radius:0 0 var(--r) var(--r);padding:24px}
+.grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:28px;align-items:start}
+@media (max-width:880px){.grid{grid-template-columns:minmax(0,1fr)}.panel{padding:18px}}
+fieldset{border:none;margin:0 0 20px;padding:0;min-width:0}
+legend{font-family:var(--display);font-stretch:90%;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;padding:0;display:block}
+.hint{font-size:13px;color:var(--muted);margin:6px 0 0}
+.seg{display:flex;flex-wrap:wrap;gap:0;border:1.5px solid var(--line);border-radius:9px;overflow:hidden;width:max-content;max-width:100%}
+.seg button{font:inherit;font-size:14px;font-weight:600;border:none;border-right:1.5px solid var(--line);background:var(--paper);color:var(--ink);padding:9px 14px;cursor:pointer}
+.seg button:last-child{border-right:none}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px}
+.row .full{grid-column:1/-1}
+@media (max-width:520px){.row{grid-template-columns:minmax(0,1fr)}}
+.field label{display:block;font-size:13px;font-weight:600;margin-bottom:4px}
+input[type=text],input[type=number],input[type=date],input[type=time],select,textarea{width:100%;font:inherit;font-size:15px;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:7px;padding:9px 11px}
+textarea{resize:vertical;min-height:64px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:13px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:5px 11px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.chip[aria-pressed="true"]{background:var(--mark-soft);border-color:var(--mark);font-weight:600}
+.chip[aria-pressed="true"]::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.sub{display:block;font-size:11.5px;color:var(--muted);font-weight:400}
+.cuisines{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.cuisines .chip{border-radius:8px;flex-direction:column;align-items:flex-start;text-align:left;padding:7px 10px}
+.cuisines .chip[aria-pressed="true"]::before{display:none}
+.cuisines .chip[aria-pressed="true"]{box-shadow:inset 3px 0 0 var(--accent)}
+.price{display:flex;gap:6px;flex-wrap:wrap}
+.price .chip{font-family:var(--mono);font-weight:600;min-width:56px;justify-content:center}
+.checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px 12px}
+.checks label{display:flex;gap:9px;align-items:flex-start;font-size:14px;cursor:pointer}
+.checks input{margin-top:3px;accent-color:var(--accent)}
+.btn{font-family:var(--display);font-stretch:90%;font-weight:700;font-size:15px;border-radius:8px;padding:10px 16px;cursor:pointer;border:2px solid var(--ink);background:var(--paper);color:var(--ink);text-decoration:none;display:inline-flex;align-items:center;gap:8px;line-height:1.1}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.small{font-size:13px;padding:6px 11px}
+.slip{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);border:2px solid var(--ink);border-radius:var(--r);background:var(--bg);overflow:hidden;min-width:0}
+.slip-head{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1.5px dashed var(--line);background:var(--paper)}
+.slip-head h2{font-family:var(--display);font-stretch:85%;font-size:17px;margin:0}
+.meta{font-family:var(--mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.toggle{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer}
+.toggle input{accent-color:var(--accent);width:16px;height:16px}
+pre.out{margin:0;padding:14px;font-family:var(--mono);font-size:12.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word;max-height:58vh;overflow:auto;color:var(--ink)}
+.slip-foot{display:flex;flex-wrap:wrap;gap:8px;padding:12px 14px;border-top:1.5px dashed var(--line);background:var(--paper)}
+.toast{font-size:13px;font-weight:600;color:var(--ok);align-self:center}
+.note{border-left:4px solid var(--mark);background:var(--mark-soft);padding:10px 12px;border-radius:0 7px 7px 0;font-size:14px;margin:0 0 18px}
+.note.blue{border-color:var(--accent);background:var(--accent-soft)}
+.quick{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.quick a{display:flex;justify-content:space-between;align-items:center;gap:8px;border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;text-decoration:none;color:var(--ink);background:var(--paper);font-weight:600;font-size:14px}
+.quick a span{font-weight:400;font-size:12px;color:var(--muted);display:block}
+.quick a::after{content:"↗";color:var(--accent);font-weight:700}
+.quick a:hover{border-color:var(--accent)}
+.steps{list-style:none;margin:0 0 22px;padding:0;display:grid;gap:12px;counter-reset:s}
+.steps li{display:grid;grid-template-columns:36px minmax(0,1fr);gap:12px;align-items:start;counter-increment:s}
+.steps li::before{content:counter(s);font-family:var(--display);font-weight:800;font-size:18px;width:32px;height:32px;border:2px solid var(--ink);border-radius:50%;display:grid;place-items:center}
+.steps b{display:block}
+h3{font-family:var(--display);font-stretch:85%;font-size:20px;margin:0 0 10px}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+@media (max-width:880px){.two{grid-template-columns:minmax(0,1fr)}}
+.card{border:1.5px solid var(--line);border-radius:var(--r);background:var(--paper);min-width:0;display:flex;flex-direction:column}
+.card .ch{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;border-bottom:1.5px dashed var(--line);flex-wrap:wrap}
+.card .ch strong{font-family:var(--display);font-stretch:88%;font-size:16px}
+.prose p,.prose li{max-width:72ch}
+.prose ul{padding-left:20px;margin:0 0 16px}
+.prose li{margin-bottom:6px}
+.sec{margin-bottom:26px}
+footer{margin-top:18px;font-size:12.5px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Restaurant&shy;sucher <span class="hl">Hamm</span></h1>
+      <p class="lede">Welches Restaurant hat gerade offen? Küche, Ort und Preis wählen, dann sucht Claude im Chat mit Websuche nach Öffnungszeiten, beliebtesten Gerichten und Reservierungsmöglichkeiten.</p>
+    </div>
+    <div style="display:grid;gap:4px;justify-items:end">
+      <div class="clock"><div class="time" id="clockTime">--:--</div><div class="day" id="clockDay"></div></div>
+      <span class="offline" id="offline" hidden>Offline: Aufträge erstellen geht trotzdem</span>
+    </div>
+  </header>
+
+  <div class="installbar" id="installBar" hidden>
+    <span id="installText">Als App auf dem Startbildschirm ablegen. Dann öffnet sie sich ohne Browserleiste.</span>
+    <button class="btn small primary" id="installBtn" type="button" hidden>App installieren</button>
+    <button class="x" id="installClose" type="button" aria-label="Hinweis schließen">×</button>
+  </div>
+
+  <nav class="tabs" role="tablist" aria-label="Bereiche">
+    <button role="tab" id="t-suche" aria-controls="p-suche" aria-selected="true">1 · Suche mit Claude</button>
+    <button role="tab" id="t-schnell" aria-controls="p-schnell" aria-selected="false">2 · Schnell in Google Maps</button>
+    <button role="tab" id="t-projekt" aria-controls="p-projekt" aria-selected="false">3 · Claude-Projekt</button>
+    <button role="tab" id="t-hinweise" aria-controls="p-hinweise" aria-selected="false">4 · Hinweise</button>
+  </nav>
+
+  <!-- TAB 1 -->
+  <section class="panel" id="p-suche" role="tabpanel" aria-labelledby="t-suche">
+    <div class="grid">
+      <form id="form" autocomplete="off">
+        <fieldset>
+          <legend>Wann?</legend>
+          <div class="seg" id="when" role="group" aria-label="Zeitpunkt">
+            <button type="button" data-v="jetzt" aria-pressed="true">Jetzt</button>
+            <button type="button" data-v="heute" aria-pressed="false">Heute Abend</button>
+            <button type="button" data-v="spaeter" aria-pressed="false">Anderer Termin</button>
+          </div>
+          <div class="row" id="whenMore" hidden style="margin-top:10px">
+            <div class="field"><label for="datum">Datum</label><input type="date" id="datum"></div>
+            <div class="field"><label for="uhr">Uhrzeit</label><input type="time" id="uhr" value="19:00"></div>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <div class="field"><label for="personen">Personen</label><input type="number" id="personen" min="1" max="60" value="2"></div>
+            <div class="field"><label for="anlass">Anlass (optional)</label>
+              <select id="anlass"><option value="">kein besonderer</option><option>Essen zu zweit</option><option>Familie mit Kindern</option><option>Geburtstag / Feier</option><option>Geschäftsessen</option><option>Größere Gruppe</option><option>Schnell und unkompliziert</option><option>Mittagstisch</option></select></div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Welche Küche?</legend>
+          <div class="cuisines" id="cuisines"></div>
+          <p class="hint">Nichts gewählt bedeutet: alle Küchen, gruppiert nach Sparte.</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>Wo?</legend>
+          <div class="chips" id="orte"></div>
+          <div class="row" style="margin-top:10px">
+            <div class="field"><label for="radius">Umkreis um Hamm-Mitte</label>
+              <select id="radius"><option value="">nur die gewählten Orte</option><option>bis 5 km</option><option selected>bis 15 km</option><option>bis 25 km</option></select></div>
+            <div class="field"><label for="start">Startpunkt (optional)</label><input type="text" id="start" placeholder="z. B. Hamm Hbf oder eine Straße"></div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Preisklasse (Hauptgericht)</legend>
+          <div class="price" id="preis"></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Gesucht wird ein bestimmtes Gericht? (optional)</legend>
+          <input type="text" id="gericht" placeholder="z. B. Schnitzel, Pizza Napoletana, Ramen, Gyros" aria-label="Gericht">
+        </fieldset>
+
+        <fieldset>
+          <legend>Extras</legend>
+          <div class="checks" id="extras"></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Ausgabe</legend>
+          <div class="row">
+            <div class="field"><label for="anzahl">Anzahl Restaurants</label><input type="number" id="anzahl" min="3" max="40" placeholder="Standard: 3 je Küche"></div>
+            <div class="field"><label for="form2">Form</label>
+              <select id="form2"><option>Tabelle mit Top-3-Empfehlung</option><option>Nur die 3 besten Treffer, kurz</option></select></div>
+          </div>
+        </fieldset>
+      </form>
+
+      <aside class="slip" aria-label="Fertiger Suchauftrag">
+        <div class="slip-head">
+          <h2>Dein Suchauftrag</h2>
+          <label class="toggle"><input type="checkbox" id="projMode"> Kurzfassung für Claude-Projekt</label>
+        </div>
+        <pre class="out" id="out" tabindex="0"></pre>
+        <div class="slip-foot">
+          <button class="btn primary" id="copyBtn" type="button">Auftrag kopieren</button>
+          <a class="btn" href="https://claude.ai/new" target="_blank" rel="noopener">Claude öffnen ↗</a>
+          <span class="toast" id="toast" aria-live="polite"></span>
+          <span class="meta" id="count" style="margin-left:auto;align-self:center"></span>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- TAB 2 -->
+  <section class="panel" id="p-schnell" role="tabpanel" aria-labelledby="t-schnell" hidden>
+    <h3>Schnellsuche ohne Claude</h3>
+    <p class="note blue">Ein Tipp öffnet Google Maps mit der passenden Suche. Dort oben den Filter <b>„Jetzt geöffnet“</b> antippen. Das ist der schnellste Weg, wenn du nur wissen willst, was gerade offen hat. Bewertungen einzelner Gerichte und Preise vergleicht dir nur die Suche mit Claude.</p>
+    <div class="row" style="margin-bottom:14px">
+      <div class="field"><label for="qOrt">Ort</label><select id="qOrt"></select></div>
+    </div>
+    <div class="quick" id="quick"></div>
+  </section>
+
+  <!-- TAB 3 -->
+  <section class="panel" id="p-projekt" role="tabpanel" aria-labelledby="t-projekt" hidden>
+    <div class="two">
+      <div>
+        <h3>Einmal einrichten, danach nur noch Kurzaufträge</h3>
+        <p class="note blue">Mit einem Claude-Projekt liegen alle Regeln dauerhaft in den Projektanweisungen. Danach genügt im Projekt-Chat die Kurzfassung aus Reiter 1.</p>
+        <ol class="steps">
+          <li><div><b>claude.ai öffnen und anmelden</b>Ein kostenloses Konto reicht.</div></li>
+          <li><div><b>Neues Projekt anlegen</b>„Projekte“ → „Neues Projekt“, Name z. B. Restaurantsucher Hamm.</div></li>
+          <li><div><b>Projektanweisungen einfügen</b>„Anweisungen festlegen“ öffnen und den Text rechts komplett einfügen.</div></li>
+          <li><div><b>Websuche einschalten</b>Im Chatfenster über das Werkzeug-Symbol.</div></li>
+          <li><div><b>Suchen</b>Neuen Chat im Projekt öffnen, Kurzfassung kopieren und einfügen.</div></li>
+        </ol>
+      </div>
+      <div class="card">
+        <div class="ch"><strong>Projektanweisungen</strong>
+          <span style="display:flex;gap:8px;align-items:center"><span class="meta" id="projCount"></span><button class="btn small primary" id="copyProj" type="button">Kopieren</button></span></div>
+        <pre class="out" id="projOut" tabindex="0" style="font-size:12px;max-height:70vh"></pre>
+        <div class="ch" style="border-bottom:none;border-top:1.5px dashed var(--line)"><span class="toast" id="toastProj" aria-live="polite"></span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB 4 -->
+  <section class="panel prose" id="p-hinweise" role="tabpanel" aria-labelledby="t-hinweise" hidden>
+    <div class="sec">
+      <h3>Wie verlässlich sind die Angaben?</h3>
+      <ul>
+        <li><b>Öffnungszeiten:</b> Claude vergleicht die Website des Restaurants mit dem Google-Eintrag. Weichen sie voneinander ab oder steht ein Feiertag an, steht dort „telefonisch prüfen“. Ruhetage und Betriebsferien werden kurzfristig oft nur telefonisch oder auf Social Media bekannt gegeben.</li>
+        <li><b>Beliebtestes Gericht:</b> Dafür wertet Claude Bewertungen und Speisekarten aus, die öffentlich zugänglich sind. Das ist ein Stimmungsbild, keine offizielle Wertung. Gibt es nicht genug Hinweise, steht dort „nicht ermittelbar“.</li>
+        <li><b>Preisklasse:</b> € bis 12 € · €€ 12–20 € · €€€ 20–30 € · €€€€ über 30 € je Hauptgericht, laut Speisekarte oder Google-Eintrag.</li>
+        <li><b>Reservierung:</b> Claude nennt Online-Reservierung, Telefon oder „keine Reservierung“, so wie es das Restaurant angibt. Am Wochenende lieber anrufen.</li>
+      </ul>
+    </div>
+    <div class="sec">
+      <h3>Tipps</h3>
+      <ul>
+        <li>Für „Was hat jetzt offen?“ ist Reiter 2 mit Google Maps am schnellsten.</li>
+        <li>Für „Wo gibt es das beste Schnitzel unter 20 €, und kann ich für 6 Personen reservieren?“ nimm Reiter 1 mit Claude.</li>
+        <li>Im kostenlosen Plan sind die Nachrichten begrenzt. 1–3 Küchen pro Suche reichen meist.</li>
+        <li>Die App fügt Datum, Wochentag und Uhrzeit automatisch in den Auftrag ein. Kopiere den Auftrag deshalb direkt vor dem Absenden.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>Restaurantsucher Hamm · Hamm, Werne, Bönen, Kamen, Bergkamen, Unna, Ahlen, Drensteinfurt, Welver, Werl, Lippetal.</footer>
+</div>
+
+<script>
+(function(){
+const $ = id => document.getElementById(id);
+const WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+const pad = n => String(n).padStart(2,'0');
+const fmtLong = d => `${WD[d.getDay()]}, ${d.toLocaleDateString('de-DE',{day:'numeric',month:'long',year:'numeric'})}`;
+function tick(){ const d=new Date(); $('clockTime').textContent=`${pad(d.getHours())}:${pad(d.getMinutes())}`; $('clockDay').textContent=fmtLong(d); }
+tick(); setInterval(()=>{ tick(); build(); }, 30000);
+
+const KUECHEN = [
+ ['Mediterran','Italienisch, Griechisch, Spanisch'],
+ ['Pizzeria','Pizza, Pasta'],
+ ['Asiatisch','Chinesisch, Thai, Vietnamesisch'],
+ ['Japanisch / Sushi','Sushi, Ramen'],
+ ['Indisch','Indisch, Pakistanisch'],
+ ['Türkisch / Orientalisch','Türkisch, Libanesisch, Persisch'],
+ ['Deutsch / Westfälisch','Gutbürgerlich, Brauhaus'],
+ ['Steak & Burger','Steakhouse, Burger, Grill'],
+ ['Mexikanisch / Latein','Mexikanisch, Südamerikanisch'],
+ ['Balkan','Kroatisch, Serbisch, Grill'],
+ ['Fisch & Meeresfrüchte',''],
+ ['Vegetarisch / Vegan',''],
+ ['Café & Frühstück','Brunch, Kuchen']
+];
+const ORTE = ['Hamm-Mitte','Hamm-Heessen','Bockum-Hövel','Hamm-Rhynern','Hamm-Uentrop','Hamm-Werries','Pelkum','Herringen','Hamm-Westen','Hamm-Norden','Werne','Bönen','Kamen','Bergkamen','Unna','Ahlen','Drensteinfurt','Welver','Werl','Lippetal'];
+const PREISE = [['€','bis 12 €'],['€€','12–20 €'],['€€€','20–30 €'],['€€€€','über 30 €']];
+const EXTRAS = [
+ ['res','Online-Reservierung möglich'],['terr','Terrasse / Außenbereich'],['kind','Kinderfreundlich'],['barr','Barrierefrei'],
+ ['park','Parkplätze'],['veg','Gute vegetarische / vegane Auswahl'],['hund','Hunde erlaubt'],['abh','Abholung / Lieferung'],
+ ['bus','Mit Bus erreichbar'],['gruppe','Separater Raum für Gruppen']
+];
+
+let state = {when:'jetzt', kueche:[], orte:['Hamm-Mitte'], preis:[]};
+try{ const s=JSON.parse(localStorage.getItem('rsh-state')||'null'); if(s) state=Object.assign(state,s); }catch(e){}
+const save=()=>{ try{ localStorage.setItem('rsh-state',JSON.stringify(state)); }catch(e){} };
+
+function toggleIn(arr,v){ const i=arr.indexOf(v); if(i>=0) arr.splice(i,1); else arr.push(v); }
+function renderChips(){
+  $('cuisines').innerHTML=''; KUECHEN.forEach(([k,s])=>{ const b=document.createElement('button'); b.type='button'; b.className='chip'; b.setAttribute('aria-pressed',state.kueche.includes(k)); b.innerHTML=`${k}${s?`<span class="sub">${s}</span>`:''}`; b.onclick=()=>{toggleIn(state.kueche,k);renderChips();build();save();}; $('cuisines').appendChild(b); });
+  $('orte').innerHTML=''; ORTE.forEach(o=>{ const b=document.createElement('button'); b.type='button'; b.className='chip'; b.textContent=o; b.setAttribute('aria-pressed',state.orte.includes(o)); b.onclick=()=>{toggleIn(state.orte,o);renderChips();build();save();}; $('orte').appendChild(b); });
+  $('preis').innerHTML=''; PREISE.forEach(([p,s])=>{ const b=document.createElement('button'); b.type='button'; b.className='chip'; b.title=s; b.innerHTML=`${p}<span class="sub" style="font-family:var(--body)">${s}</span>`; b.style.flexDirection='column'; b.setAttribute('aria-pressed',state.preis.includes(p)); b.onclick=()=>{toggleIn(state.preis,p);renderChips();build();save();}; $('preis').appendChild(b); });
+}
+EXTRAS.forEach(([k,l])=>{ const lab=document.createElement('label'); lab.innerHTML=`<input type="checkbox" id="ex-${k}"> <span>${l}</span>`; $('extras').appendChild(lab); });
+
+document.querySelectorAll('#when button').forEach(b=>b.addEventListener('click',()=>{ state.when=b.dataset.v; syncWhen(); build(); save(); }));
+function syncWhen(){ document.querySelectorAll('#when button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.v===state.when)); $('whenMore').hidden = state.when!=='spaeter'; }
+const d0=new Date(); $('datum').value=`${d0.getFullYear()}-${pad(d0.getMonth()+1)}-${pad(d0.getDate())}`;
+
+const BASE = `# Restaurantsucher Hamm – Arbeitsanweisung
+
+## Rolle
+Du bist der Restaurantsucher für Hamm (Westfalen) und Umgebung (u. a. Werne, Bönen, Kamen, Bergkamen, Unna, Ahlen, Drensteinfurt, Welver, Werl, Lippetal). Du findest Restaurants, die zum gewünschten Zeitpunkt geöffnet haben, sortiert nach Küche, mit beliebtestem Gericht, Preisklasse, Kontaktdaten und Reservierungsmöglichkeit.
+
+## Verbindliche Regeln
+1. Nutze immer die Websuche. Verlass dich nicht auf Vorwissen – Restaurants schließen, wechseln Besitzer und Öffnungszeiten. Ist die Websuche nicht verfügbar, sag das sofort.
+2. Prüfe die Öffnungszeiten für den genannten Wochentag und die Uhrzeit auf der Website des Restaurants und im Google-Unternehmensprofil (oder einer vergleichbaren aktuellen Quelle). Achte auf Ruhetage, Mittagspausen, „Küche bis“-Zeiten, Betriebsferien und Feiertage in NRW.
+3. Status je Restaurant: „geöffnet“ (beide Quellen stimmen überein oder eine aktuelle Quelle bestätigt eindeutig) / „telefonisch prüfen“ (widersprüchlich, veraltet oder Feiertag) / „geschlossen“ (nicht in die Hauptliste). Als „vorübergehend“ oder „dauerhaft geschlossen“ markierte Betriebe nie empfehlen.
+4. Schließt die Küche innerhalb der nächsten 60 Minuten nach dem gewünschten Zeitpunkt, weise deutlich darauf hin.
+5. Erfinde niemals Restaurants, Gerichte, Bewertungen, Preise, Telefonnummern, Adressen oder Reservierungswege. Fehlt etwas: „nicht angegeben“.
+6. Beliebtestes Gericht: nur aus öffentlich zugänglichen Bewertungen (z. B. Google, Tripadvisor) oder ausdrücklichen Empfehlungen des Hauses ableiten, mit kurzer Quellenangabe. Reicht die Grundlage nicht: „nicht ermittelbar“. Keine Bewertungstexte wörtlich in längeren Passagen übernehmen.
+7. Preisklasse nach Hauptgerichtspreisen der aktuellen Speisekarte: € bis 12 €, €€ 12–20 €, €€€ 20–30 €, €€€€ über 30 €. Wenn möglich Preisspanne der Hauptgerichte nennen. Ohne Speisekarte die Preisangabe des Google-Profils nutzen und das kennzeichnen.
+8. Bewertung: Durchschnitt und Anzahl der Bewertungen mit Quelle (z. B. „4,6 / 1.240 Google“). Keine Bewertung erfinden oder runden, wenn sie nicht sichtbar ist.
+9. Reservierung: „online“ (mit Link zum Reservierungssystem), „telefonisch“, „per E-Mail/Formular“ oder „keine Reservierung“ – so wie das Restaurant es angibt.
+10. Dubletten vermeiden, Ketten- und Systemgastronomie nur aufnehmen, wenn sie ausdrücklich passt oder wenig anderes offen hat (dann kennzeichnen).
+11. Entfernungen nur nachvollziehbar angeben (ca. km ab Startpunkt bzw. Hamm-Mitte).
+
+## Ausgabe
+1. Eine Zeile Zusammenfassung: Zeitpunkt (Wochentag, Datum, Uhrzeit), Orte, Küchen, Anzahl gefundener geöffneter Restaurants.
+2. Je Küche eine Tabelle: Restaurant | Ort / Adresse | Status | Öffnungszeit am gewünschten Tag | Beliebtestes Gericht (Quelle) | Preisklasse (Spanne) | Bewertung | Telefon | Reservierung | Website / Link
+3. „Meine Top 3“ mit je einem Satz Begründung (passend zu Anlass, Preis und Extras).
+4. Unter „telefonisch prüfen“ die unsicheren Fälle mit Grund.
+5. Abschluss: „Öffnungszeiten können sich kurzfristig ändern – bei Unsicherheit vorher anrufen.“
+Halte dich kurz. Tabellen vor Fließtext. Anrede „du“.`;
+
+const MOD = {
+ jetzt:'## Modus: Jetzt essen\nEs geht um die nächste Stunde. Priorisiere Restaurants, die zum angegebenen Zeitpunkt sicher geöffnet sind und deren Küche noch mindestens 60 Minuten geöffnet hat. Bevorzuge kurze Wege und Restaurants, die ohne Reservierung Plätze haben oder telefonisch kurzfristig reservieren.',
+ heute:'## Modus: Heute Abend\nZeitraum heute ab 18:00 Uhr. Prüfe Abendöffnung und Reservierungsmöglichkeit. Weise darauf hin, wenn am heutigen Wochentag eine Reservierung empfohlen ist.',
+ spaeter:'## Modus: Geplanter Termin\nPrüfe Öffnungszeiten für den genannten Wochentag und das Datum (inkl. Feiertage und angekündigter Betriebsferien). Hebe Restaurants mit Online-Reservierung oder Platz für die genannte Personenzahl hervor.'
+};
+
+function auftrag(){
+  const now=new Date(); const L=[];
+  L.push('# Suchauftrag');
+  L.push(`Aktueller Zeitpunkt: ${fmtLong(now)}, ${pad(now.getHours())}:${pad(now.getMinutes())} Uhr`);
+  if(state.when==='jetzt') L.push('Gewünscht: jetzt bzw. in der nächsten Stunde');
+  else if(state.when==='heute') L.push(`Gewünscht: heute Abend (${WD[now.getDay()]})`);
+  else { const dv=$('datum').value; const dd = dv? new Date(dv+'T12:00'):now; L.push(`Gewünscht: ${fmtLong(dd)}, ${$('uhr').value||'19:00'} Uhr`); }
+  L.push(`Personen: ${$('personen').value||'2'}`);
+  if($('anlass').value) L.push(`Anlass: ${$('anlass').value}`);
+  L.push(`Küche: ${state.kueche.length?state.kueche.map(k=>{const x=KUECHEN.find(q=>q[0]===k);return x[1]?`${k} (${x[1]})`:k;}).join('; '):'alle Küchen, nach Sparte gruppiert'}`);
+  L.push(`Orte: ${state.orte.length?state.orte.join(', '):'Hamm und Umgebung'}${$('radius').value?` – zusätzlich Umkreis ${$('radius').value} um Hamm-Mitte`:''}`);
+  if($('start').value.trim()) L.push(`Startpunkt für Entfernungen: ${$('start').value.trim()}`);
+  if(state.preis.length) L.push(`Preisklasse: ${state.preis.map(p=>`${p} (${PREISE.find(q=>q[0]===p)[1]})`).join(', ')}`);
+  if($('gericht').value.trim()) L.push(`Gesuchtes Gericht: ${$('gericht').value.trim()} – Restaurants danach auswählen, in denen dieses Gericht besonders gut bewertet wird`);
+  const ex=EXTRAS.filter(([k])=>$('ex-'+k).checked).map(([,l])=>l); if(ex.length) L.push(`Wichtig: ${ex.join(', ')}`);
+  L.push(`Anzahl: ${$('anzahl').value?$('anzahl').value+' Restaurants insgesamt':'bis zu 3 geöffnete Restaurants je Küche'}`);
+  L.push(`Ausgabe: ${$('form2').value}`);
+  L.push('');
+  L.push('Starte direkt mit der Websuche und halte dich an die Arbeitsanweisung.');
+  return L.join('\n');
+}
+function build(){
+  const txt = $('projMode').checked ? auftrag() : BASE+'\n\n'+MOD[state.when]+'\n\n---\n\n'+auftrag();
+  $('out').textContent=txt; $('count').textContent=txt.length.toLocaleString('de-DE')+' Zeichen';
+}
+$('form').addEventListener('input',build); $('form').addEventListener('change',build); $('form').addEventListener('submit',e=>e.preventDefault());
+$('projMode').addEventListener('change',build);
+
+function copyText(text, el, toastEl){
+  const done=()=>{ toastEl.textContent='Kopiert'; setTimeout(()=>toastEl.textContent='',2200); };
+  const fallback=()=>{ const r=document.createRange(); r.selectNodeContents(el); const s=getSelection(); s.removeAllRanges(); s.addRange(r); toastEl.textContent='Text markiert – jetzt kopieren'; };
+  try{ navigator.clipboard.writeText(text).then(done,fallback); }catch(e){ fallback(); }
+}
+$('copyBtn').onclick=()=>{ build(); copyText($('out').textContent,$('out'),$('toast')); };
+
+const PROJ = BASE+'\n\n# Modi\n'+Object.values(MOD).join('\n\n')+'\n\nWähle den Modus anhand des Auftrags. Der Auftrag nennt immer den aktuellen Zeitpunkt – verwende ihn statt einer eigenen Annahme.';
+$('projOut').textContent=PROJ; $('projCount').textContent=PROJ.length.toLocaleString('de-DE')+' Zeichen';
+$('copyProj').onclick=()=>copyText(PROJ,$('projOut'),$('toastProj'));
+
+/* Schnellsuche */
+const QK = [['Restaurants','alle Küchen','Restaurant'],['Italienisch','Pizza, Pasta','italienisches Restaurant'],['Griechisch','','griechisches Restaurant'],['Spanisch / Tapas','','Tapas Restaurant'],['Asiatisch','','asiatisches Restaurant'],['Sushi','','Sushi'],['Thai','','thailändisches Restaurant'],['Vietnamesisch','','vietnamesisches Restaurant'],['Indisch','','indisches Restaurant'],['Türkisch','','türkisches Restaurant'],['Deutsch / Westfälisch','','gutbürgerliches Restaurant'],['Steakhouse','','Steakhouse'],['Burger','','Burger Restaurant'],['Mexikanisch','','mexikanisches Restaurant'],['Balkan','','Balkan Restaurant'],['Vegetarisch / Vegan','','vegetarisches Restaurant'],['Café & Frühstück','','Frühstück Café']];
+const qOrt=$('qOrt'); ['Hamm',...ORTE.filter(o=>!o.startsWith('Hamm'))].forEach(o=>{ const op=document.createElement('option'); op.textContent=o; qOrt.appendChild(op); });
+function renderQuick(){
+  const ort = qOrt.value==='Pelkum'||qOrt.value==='Herringen'||qOrt.value==='Bockum-Hövel' ? qOrt.value+' Hamm' : qOrt.value;
+  $('quick').innerHTML = QK.map(([t,s,q])=>`<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q+' '+ort)}" target="_blank" rel="noopener"><div>${t}<span>${s||'in '+qOrt.value}</span></div></a>`).join('');
+}
+qOrt.addEventListener('change',renderQuick);
+
+/* Tabs */
+const tabs=[...document.querySelectorAll('nav.tabs button')];
+function showTab(id){ tabs.forEach(t=>{ const on=t.id===id; t.setAttribute('aria-selected',on); $(t.getAttribute('aria-controls')).hidden=!on; }); try{localStorage.setItem('rsh-tab',id);}catch(e){} }
+tabs.forEach(t=>t.addEventListener('click',()=>showTab(t.id)));
+let st=null; try{ st=localStorage.getItem('rsh-tab'); }catch(e){} if(st&&$(st)) showTab(st);
+
+renderChips(); syncWhen(); renderQuick(); build();
+})();
+</script>
+<script>
+(function(){
+  if('serviceWorker' in navigator){ window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
+  var bar=document.getElementById('installBar'), btn=document.getElementById('installBtn'), txt=document.getElementById('installText');
+  var standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  var dismissed=false; try{dismissed=localStorage.getItem('rsh-install-x')==='1'}catch(e){}
+  var deferred=null;
+  window.addEventListener('beforeinstallprompt',function(e){ e.preventDefault(); deferred=e; if(!standalone&&!dismissed){ bar.hidden=false; btn.hidden=false; } });
+  btn.addEventListener('click',function(){ if(!deferred) return; deferred.prompt(); deferred.userChoice.finally(function(){ deferred=null; bar.hidden=true; }); });
+  var ios=/iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  if(ios && !standalone && !dismissed){ txt.textContent='Als App installieren: in Safari auf „Teilen“ tippen, dann „Zum Home-Bildschirm“.'; bar.hidden=false; }
+  document.getElementById('installClose').addEventListener('click',function(){ bar.hidden=true; try{localStorage.setItem('rsh-install-x','1')}catch(e){} });
+  var off=document.getElementById('offline'); function upd(){ off.hidden=navigator.onLine; }
+  addEventListener('online',upd); addEventListener('offline',upd); upd();
+})();
+</script>
+</body>
+</html>
